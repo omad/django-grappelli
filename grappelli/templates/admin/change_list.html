@@ -2,7 +2,7 @@
 
 <!-- LOADING -->
 {% load url from future %}
-{% load adminmedia admin_list i18n grp_tags %}
+{% load admin_list i18n grp_tags %}
 
 <!-- STYLESHEETS -->
 {% block stylesheets %}
@@ -13,6 +13,7 @@
 <!-- JAVASCRIPTS -->
 {% block javascripts %}
     {{ block.super }}
+    {{ media.js }}
     {% if cl.formset or action_form %}
         {% url 'admin:jsi18n' as jsi18nurl %}
         <script type="text/javascript" src="{{ jsi18nurl|default:'../../jsi18n/'}}"></script>
@@ -39,19 +40,19 @@
                     var autocomplete_fields_m2m = {% get_autocomplete_lookup_fields_m2m cl.model_admin %};
                     var autocomplete_fields_generic = {% get_autocomplete_lookup_fields_generic cl.model_admin %};
                     $.each(related_lookup_fields_fk, function() {
-                        $("div.changelist-results")
+                        $("div.grp-changelist-results")
                         .find("input[name^='" + prefix + "'][name$='" + this + "']")
                         .grp_related_fk({lookup_url:"{% url 'grp_related_lookup' %}"});
                     });
                     $.each(related_lookup_fields_m2m, function() {
-                        $("div.changelist-results")
+                        $("div.grp-changelist-results")
                         .find("input[name^='" + prefix + "'][name$='" + this + "']")
                         .grp_related_m2m({lookup_url:"{% url 'grp_m2m_lookup' %}"});
                     });
                     $.each(related_lookup_fields_generic, function() {
                         var content_type = this[0],
                             object_id = this[1];
-                        $("div.changelist-results")
+                        $("div.grp-changelist-results")
                         .find("input[name^='" + prefix + "'][name$='" + this[1] + "']")
                         .each(function() {
                             var ct_id = "#id_" + prefix + "-" + $(this).attr("id").split("-")[1] + "-" + content_type,
@@ -60,7 +61,7 @@
                         });
                     });
                     $.each(autocomplete_fields_fk, function() {
-                        $("div.changelist-results")
+                        $("div.grp-changelist-results")
                         .find("input[name^='" + prefix + "'][name$='" + this + "']")
                         .each(function() {
                             $(this).grp_autocomplete_fk({
@@ -70,7 +71,7 @@
                         });
                     });
                     $.each(autocomplete_fields_m2m, function() {
-                        $("div.changelist-results")
+                        $("div.grp-changelist-results")
                         .find("input[name^='" + prefix + "'][name$='" + this + "']")
                         .each(function() {
                             $(this).grp_autocomplete_m2m({
@@ -82,7 +83,7 @@
                     $.each(autocomplete_fields_generic, function() {
                         var content_type = this[0],
                             object_id = this[1];
-                        $("div.changelist-results")
+                        $("div.grp-changelist-results")
                         .find("input[name^='" + prefix + "'][name$='" + this[1] + "']")
                         .each(function() {
                             var i = $(this).attr("id").match(/-\d+-/);
@@ -107,9 +108,6 @@
             $(document).ready(function() {
                 grappelli.initSearchbar();
                 grappelli.initFilter();
-                // HACK: add no-wrap to table-elements.
-                // should be solved with http://code.djangoproject.com/changeset/15658
-                // grappelli.initTableElements(); 
             });
         })(django.jQuery);
     </script>
@@ -117,17 +115,17 @@
 {% endblock %}
 
 <!-- COLTYPE/BODYCLASS-- >
-{% block bodyclass %}change-list{% endblock %}
-{% block content-class %}content-flexible{% endblock %}
+{% block bodyclass %}grp-change-list{% endblock %}
+{% block content-class %}{% endblock %}
 
 <!-- BREADCRUMBS -- >
 {% block breadcrumbs %}
     {% if not is_popup %}
-        <div id="breadcrumbs">
-            <a href="../../">{% trans "Home" %}</a> &rsaquo;
-            <a href="../">{% trans app_label|capfirst|escape %}</a> &rsaquo;
-            {{ cl.opts.verbose_name_plural|capfirst }}
-        </div>
+        <ul class="grp-horizontal-list">
+            <li><a href="../../">{% trans "Home" %}</a></li>
+            <li><a href="../">{% trans app_label|capfirst|escape %}</a></li>
+            <li>{{ cl.opts.verbose_name_plural|capfirst }}</li>
+        </ul>
     {% endif %}
 {% endblock %}
 
@@ -139,9 +137,9 @@
 <!-- OBJECT-TOOLS -->
 {% block object-tools %}
     {% if has_add_permission %}
-        <ul class="tools">
+        <ul class="grp-object-tools">
             {% block object-tools-items %}
-                <li><a href="add/{% if is_popup %}?_popup=1{% endif %}" class="add-handler focus">{% blocktrans with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktrans %}</a></li>
+                <li><a href="add/{% if is_popup %}?_popup=1{% endif %}" class="grp-add-link grp-state-focus">{% blocktrans with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktrans %}</a></li>
             {% endblock %}
         </ul>
     {% endif %}
@@ -150,37 +148,47 @@
 <!-- CONTENT -->
 {% block content %}
     {% if cl.search_fields or cl.has_filters or cl.date_hierarchy %}
-        <div class="module changelist-filters">
-            <!-- PAGINATION TOP -->
-            {% pagination cl %}
-            {% if cl.has_filters or cl.search_fields %}
-                <!-- FILTERS -->
-                {% if cl.has_filters %}
-                    <div id="filters" class="module filter span-6">
-                        <div class="pulldown-container">
-                            <a href="javascript://" class="button toggle-filters">{% trans 'Filter' %}</a>
-                            <div class="filter-pulldown">
-                                {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
-                            </div>
-                        </div>
+        <div class="grp-module grp-changelist-filters">
+            <div class="grp-row">
+                <div class="g-d-c-fluid">
+                    <div class="g-d-fluid">
+                        <!-- PAGINATION TOP -->
+                        {% pagination cl %}
                     </div>
-                {% endif %}
-                <!-- SEARCH -->
-                {% if cl.search_fields %}
-                    <div id="search" class="module search span-6">
-                        {% block search %}{% search_form cl %}{% endblock %}
-                    </div>
-                {% endif %}
+                    {% if cl.has_filters or cl.search_fields %}
+                        <aside class="{% if cl.has_filters and cl.search_fields %}g-d-12{% else %}{% if cl.has_filters or cl.search_fields %}g-d-6{% endif %}{% endif %} g-d-l">
+                            <header style="display:none"><h1>{% if cl.search_fields %}Search{% if cl.has_filters %} &amp; {% endif %}{% endif %}{% if cl.has_filters %}Filters{% endif %}</h1></header>
+                            <!-- SEARCH -->
+                            {% if cl.search_fields %}
+                                <div id="search" class="g-d-6">
+                                    {% block search %}{% search_form cl %}{% endblock %}
+                                </div>
+                            {% endif %}
+                            <!-- FILTERS -->
+                            {% if cl.has_filters %}
+                                <div id="filters" class="filter g-d-6 g-d-l">
+                                    <div class="grp-pulldown-container">
+                                        <a href="javascript://" class="grp-button grp-pulldown-handler">{% trans 'Filter' %}</a>
+                                        <ul class="grp-pulldown-content" style="display: none">
+                                            {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </aside>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- DATE HIERARCHY -->
+            {% if cl.date_hierarchy %}
+                {% if show and choices %}<div class="grp-row">{% date_hierarchy cl %}</div>{% endif %}
             {% endif %}
-            <br clear="all" />
         </div>
-        <!-- DATE HIERARCHY -->
-        {% if cl.date_hierarchy %}
-            {% date_hierarchy cl %}
-        {% endif %}
     {% endif %}
-    <form id="changelist-form" action="" method="post"{% if cl.formset.is_multipart %} enctype="multipart/form-data"{% endif %}>{% csrf_token %}
-        <div id="changelist" class="container-full{% if cl.list_editable %} editable{% endif %}" style="">
+    <div class="g-d-fluid">
+    <form id="grp-changelist-form" action="" method="post"{% if cl.formset.is_multipart %} enctype="multipart/form-data"{% endif %}>{% csrf_token %}
+        <section id="grp-changelist" class="{% if cl.list_editable %} grp-editable{% endif %}">
+            <header style="display:none"><h1>Results</h1></header>
             <!-- POPUP -->
             {% if is_popup %}<input type="hidden" name="_popup" value="1" />{% endif %}
             <!-- ERRORS -->
@@ -198,19 +206,23 @@
             {% block result_list %}
                 {% result_list cl %}
             {% endblock %}
-            <!-- PAGINATION BOTTOM -->
-            {% pagination cl %}
-        </div><br clear="all" />
-        <!-- SUBMIT ROW -->
-        {% if cl.formset or action_form %}
-            <div id="submit" class="module footer">
-                {% if action_form %}{% admin_actions %}{% endif %}
-                {% if cl.formset %}
-                <ul class="submit-row">
-                    <li class="submit-button-container"><input type="submit" class="default" name="_save" value="Save"/></li>
-                </ul>
-                {% endif %}
+        </section>
+        <!-- PAGINATION BOTTOM -->
+        {% if not cl.result_count == 0 %}
+            <div class="grp-module">
+                <div class="grp-row">{% pagination cl %}</div>
             </div>
         {% endif %}
+        <!-- SUBMIT ROW -->
+        {% if cl.formset or action_form %}
+            <footer id="submit" class="grp-module grp-submit-row grp-fixed-footer">
+                <header style="display:none"><h1>Submit Options</h1></header>
+                <ul>
+                    {% if action_form %}<li class="grp-float-left grp-changelist-actions">{% admin_actions %}</li>{% endif %}
+                    {% if cl.formset %}<li><input type="submit" class="grp-button grp-default" name="_save" value="Save"/></li>{% endif %}
+                </ul>
+            </footer>
+        {% endif %}
     </form>
+</div>
 {% endblock %}
